@@ -95,7 +95,12 @@
             </div>
           } @else if (isHost()) {
             <button class="story__add" (click)="startEditStory()">
-              + Añadir título de la historia
+              <span class="story__add-icon">✍️</span>
+              <span class="story__add-text">
+                <strong>Añade el título de la historia a estimar</strong>
+                <small>Tus compañeros están esperando para saber qué votar</small>
+              </span>
+              <span class="story__add-arrow">→</span>
             </button>
           } @else {
             <p class="story__empty">Sin historia definida</p>

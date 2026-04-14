@@ -1,6 +1,6 @@
 :host {
   display: block;
-  min-height: 100vh;
+  min-height: 100dvh;
   font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
   color: #e2e8f0;
   background:
@@ -12,7 +12,7 @@
 
 .home {
   position: relative;
-  min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   align-items: center;
   justify-content: center;

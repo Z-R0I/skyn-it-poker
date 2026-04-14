@@ -8,7 +8,9 @@
       "Bash(ng new:*)",
       "Bash(ng generate:*)",
       "Bash(npx ng:*)",
-      "Bash(npm install:*)"
+      "Bash(npm install:*)",
+      "Bash(gh repo:*)",
+      "Bash(gh api:*)"
     ]
   }
 }

@@ -156,6 +156,7 @@ export class RoomService {
     if (!s) return;
     const updates: Record<string, any> = {};
     updates[`rooms/${s.id}/meta/revealed`] = false;
+    updates[`rooms/${s.id}/meta/currentStory`] = null;
     for (const pid of Object.keys(s.players)) {
       updates[`rooms/${s.id}/players/${pid}/vote`] = null;
     }

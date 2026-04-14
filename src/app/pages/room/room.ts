@@ -62,7 +62,7 @@ export class Room implements OnInit, OnDestroy {
     if (!votes.length) return null;
 
     const numeric = votes
-      .map((v) => Number(v))
+      .map((v) => (v === '½' ? 0.5 : Number(v)))
       .filter((n) => !Number.isNaN(n));
     const avg = numeric.length
       ? (numeric.reduce((a, b) => a + b, 0) / numeric.length).toFixed(1)
