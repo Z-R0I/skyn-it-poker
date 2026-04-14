@@ -1,0 +1,9 @@
+<button
+  type="button"
+  class="card"
+  [class.selected]="selected()"
+  [disabled]="disabled()"
+  (click)="onClick()"
+>
+  <span class="card__value">{{ value() }}</span>
+</button>

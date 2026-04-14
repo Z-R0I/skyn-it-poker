@@ -1,0 +1,29 @@
+name: Cleanup rooms
+
+on:
+  schedule:
+    # 22:59 UTC = 23:59 hora peninsular en invierno / 00:59 en verano.
+    # GitHub Actions usa cron en UTC (no se puede fijar TZ en cron).
+    - cron: '59 22 * * *'
+  workflow_dispatch: # permite lanzarlo a mano desde la pestaña Actions
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install firebase-admin
+        run: npm install firebase-admin --no-save
+
+      - name: Run cleanup
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          FIREBASE_DATABASE_URL: ${{ secrets.FIREBASE_DATABASE_URL }}
+        run: node scripts/cleanup-rooms.js

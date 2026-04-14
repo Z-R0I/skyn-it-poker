@@ -1,0 +1,10 @@
+<div class="deck">
+  @for (card of cards(); track card) {
+    <app-card
+      [value]="card"
+      [selected]="card === selected()"
+      [disabled]="disabled()"
+      (pick)="onPick($event)"
+    />
+  }
+</div>

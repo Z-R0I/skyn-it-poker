@@ -1,0 +1,187 @@
+@if (state(); as s) {
+  <section class="room">
+    <header class="room__header">
+      <div class="room__title">
+        <h1>Planning Poker</h1>
+        <button class="code" (click)="copyCode()" [title]="'Copiar código'">
+          <span class="code__label">Código:</span>
+          <span class="code__value">{{ roomId() }}</span>
+          <span class="code__hint">{{ copied() ? '¡Copiado!' : '📋' }}</span>
+        </button>
+      </div>
+
+      <div class="room__controls">
+        @if (isHost()) {
+          <label class="deck-switch">
+            <span>Baraja</span>
+            <select
+              [value]="deckType()"
+              (change)="changeDeck($any($event.target).value)"
+            >
+              <option value="fibonacci">Fibonacci</option>
+              <option value="fibonacci-modified">Fibonacci modificada</option>
+            </select>
+          </label>
+        }
+        <button class="btn btn--ghost" (click)="leave()">Salir</button>
+      </div>
+    </header>
+
+    <div class="room__layout">
+      <aside class="players">
+        <h3>Jugadores ({{ players().length }})</h3>
+        <ul>
+          @for (p of players(); track p.id) {
+            <li
+              class="player"
+              [class.player--voted]="!!p.vote"
+              [class.player--me]="p.id === me()?.id"
+              [class.player--spectator]="p.role === 'spectator'"
+            >
+              <span class="player__avatar">{{ p.name.charAt(0).toUpperCase() }}</span>
+              <span class="player__name">
+                {{ p.name }}
+                @if (p.id === s.meta.hostId) { <small title="Admin">👑</small> }
+                @if (p.role === 'spectator') { <small class="player__tag">espectador</small> }
+              </span>
+
+              @if (isHost()) {
+                <button
+                  class="player__toggle"
+                  [class.is-on]="p.role === 'player'"
+                  (click)="togglePlayerRole(p)"
+                  [title]="p.role === 'player' ? 'Quitar voto' : 'Permitir votar'"
+                >
+                  {{ p.role === 'player' ? '🗳️' : '👁️' }}
+                </button>
+              }
+
+              <span class="player__vote">
+                @if (p.role === 'spectator') {
+                  —
+                } @else if (revealed()) {
+                  {{ p.vote ?? '—' }}
+                } @else {
+                  @if (p.vote) { ✓ } @else { … }
+                }
+              </span>
+            </li>
+          }
+        </ul>
+      </aside>
+
+      <div class="table">
+        <div class="story">
+          @if (editingStory()) {
+            <form class="story__edit" (submit)="$event.preventDefault(); saveStory()">
+              <input
+                type="text"
+                name="storyDraft"
+                [(ngModel)]="storyDraft"
+                placeholder="Título de la historia a estimar"
+                maxlength="120"
+                autofocus
+              />
+              <button type="submit" class="btn btn--primary">Guardar</button>
+              <button type="button" class="btn btn--ghost" (click)="cancelEditStory()">Cancelar</button>
+            </form>
+          } @else if (story()) {
+            <div class="story__view">
+              <span class="story__label">Estimando</span>
+              <h2 class="story__title">{{ story() }}</h2>
+              @if (isHost()) {
+                <button class="story__edit-btn" (click)="startEditStory()" title="Editar">✏️</button>
+              }
+            </div>
+          } @else if (isHost()) {
+            <button class="story__add" (click)="startEditStory()">
+              + Añadir título de la historia
+            </button>
+          } @else {
+            <p class="story__empty">Sin historia definida</p>
+          }
+        </div>
+
+        <div class="table__status">
+          @if (revealed()) {
+            <p class="hint">Ronda revelada</p>
+          } @else if (me()?.vote) {
+            <p>Tu voto: <strong>{{ me()?.vote }}</strong></p>
+          } @else if (!amSpectator()) {
+            <p>Selecciona una carta para votar</p>
+          }
+        </div>
+
+        @if (amSpectator()) {
+          <p class="hint">Estás como espectador — no puedes votar en esta ronda.</p>
+        } @else {
+          <app-deck
+            [cards]="cards()"
+            [selected]="me()?.vote ?? null"
+            [disabled]="revealed()"
+            (vote)="onVote($event)"
+          />
+        }
+
+        @if (revealed() && results(); as r) {
+          <section class="results">
+            <header class="results__summary">
+              @if (r.avg !== null) {
+                <div class="stat stat--avg">
+                  <span class="stat__label">Media</span>
+                  <span class="stat__value">{{ r.avg }}</span>
+                </div>
+              }
+              <div class="stat">
+                <span class="stat__label">Votos</span>
+                <span class="stat__value">{{ r.total }}</span>
+              </div>
+              @if (r.consensus) {
+                <div class="stat stat--consensus">
+                  <span class="stat__label">Consenso</span>
+                  <span class="stat__value">🎉</span>
+                </div>
+              }
+            </header>
+
+            <div class="results__cards">
+              @for (c of r.counts; track c.value) {
+                <div class="result-card" [class.result-card--top]="c.count === r.topCount">
+                  <div class="result-card__face">{{ c.value }}</div>
+                  <div class="result-card__count">
+                    {{ c.count }} <small>{{ c.count === 1 ? 'voto' : 'votos' }}</small>
+                  </div>
+                </div>
+              }
+            </div>
+          </section>
+        }
+
+        <div class="room__actions">
+          @if (!revealed()) {
+            @if (isHost()) {
+              <button
+                class="btn btn--primary"
+                [disabled]="!canReveal()"
+                [title]="canReveal() ? '' : 'Faltan votantes por votar'"
+                (click)="reveal()"
+              >
+                Revelar @if (!canReveal()) { <small>(esperando votos)</small> }
+              </button>
+            } @else {
+              <p class="hint">Esperando a que el admin revele…</p>
+            }
+          } @else {
+            @if (isHost()) {
+              <button class="btn btn--primary" (click)="reset()">Nueva ronda</button>
+            }
+          }
+        </div>
+      </div>
+    </div>
+  </section>
+} @else {
+  <section class="loading">
+    <p>Cargando sala…</p>
+  </section>
+}

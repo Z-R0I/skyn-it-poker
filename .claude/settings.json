@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "WebFetch(domain:planningpoker.live)",
+      "Bash(ng version:*)",
+      "Bash(npm --version)",
+      "Bash(ng new:*)",
+      "Bash(ng generate:*)",
+      "Bash(npx ng:*)",
+      "Bash(npm install:*)"
+    ]
+  }
+}
