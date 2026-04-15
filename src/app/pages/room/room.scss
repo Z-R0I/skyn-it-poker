@@ -175,7 +175,15 @@
 
   &__name {
     font-size: 0.95rem;
-    small { margin-left: 0.25rem; }
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    small {
+      display: inline-flex;
+      align-items: center;
+      line-height: 1;
+      font-size: 0.95rem;
+    }
   }
 
   &__vote {
