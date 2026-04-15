@@ -3,7 +3,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { Deck } from '../../components/deck/deck';
 import { DECKS, DeckType } from '../../models/room';
-import { Player } from '../../models/player';
+import { Avatar, dicebearUrl, EMOJI_AVATARS, Player, randomSeed } from '../../models/player';
 import { RoomService } from '../../services/room';
 
 @Component({
@@ -50,7 +50,17 @@ export class Room implements OnInit, OnDestroy {
   storyDraft = '';
 
   kicked = signal(false);
+  openPlayerId = signal<string | null>(null);
+
+  profileOpen = signal(false);
+  profileDraftName = '';
+  profileDraftAvatar = signal<Avatar>({ type: 'dicebear', value: 'default' });
+  emojiList = EMOJI_AVATARS;
+  dicebearUrl = dicebearUrl;
   private wasAttached = false;
+  private touchStartX = 0;
+  private touchStartY = 0;
+  private touchMoved = false;
 
   constructor() {
     effect(() => {
@@ -151,6 +161,65 @@ export class Room implements OnInit, OnDestroy {
     if (!this.isHost() || p.id === this.me()?.id) return;
     if (!confirm(`¿Expulsar a ${p.name} de la sala?`)) return;
     this.svc.kickPlayer(p.id);
+    this.openPlayerId.set(null);
+  }
+
+  onRowTouchStart(e: TouchEvent) {
+    const t = e.touches[0];
+    this.touchStartX = t.clientX;
+    this.touchStartY = t.clientY;
+    this.touchMoved = false;
+  }
+
+  onRowTouchMove(e: TouchEvent) {
+    const t = e.touches[0];
+    const dx = t.clientX - this.touchStartX;
+    const dy = t.clientY - this.touchStartY;
+    if (Math.abs(dx) > 4 && Math.abs(dx) > Math.abs(dy)) this.touchMoved = true;
+  }
+
+  onRowTouchEnd(e: TouchEvent, p: Player) {
+    if (!this.touchMoved) return;
+    const dx = e.changedTouches[0].clientX - this.touchStartX;
+    if (dx < -30) {
+      this.openPlayerId.set(p.id);
+    } else if (dx > 30) {
+      this.openPlayerId.set(null);
+    }
+  }
+
+  closeRow() {
+    this.openPlayerId.set(null);
+  }
+
+  openProfile() {
+    const m = this.me();
+    if (!m) return;
+    this.profileDraftName = m.name;
+    this.profileDraftAvatar.set(
+      m.avatar ?? { type: 'dicebear', value: randomSeed() },
+    );
+    this.profileOpen.set(true);
+  }
+
+  closeProfile() {
+    this.profileOpen.set(false);
+  }
+
+  rerollAvatar() {
+    this.profileDraftAvatar.set({ type: 'dicebear', value: randomSeed() });
+  }
+
+  pickEmoji(emoji: string) {
+    this.profileDraftAvatar.set({ type: 'emoji', value: emoji });
+  }
+
+  saveProfile() {
+    this.svc.updateProfile({
+      name: this.profileDraftName,
+      avatar: this.profileDraftAvatar(),
+    });
+    this.profileOpen.set(false);
   }
 
   async copyCode() {

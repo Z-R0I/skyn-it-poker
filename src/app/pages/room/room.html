@@ -24,6 +24,78 @@
           </label>
         }
         <button class="btn btn--ghost" (click)="leave()">Salir</button>
+
+        @if (me(); as m) {
+          <div class="profile">
+            <button class="profile__btn" (click)="openProfile()" title="Tu perfil">
+              @if (m.avatar?.type === 'emoji') {
+                <span class="avatar avatar--md avatar--emoji">{{ m.avatar?.value }}</span>
+              } @else if (m.avatar?.type === 'dicebear') {
+                <img
+                  class="avatar avatar--md"
+                  [src]="dicebearUrl(m.avatar?.value || m.name)"
+                  alt=""
+                />
+              } @else {
+                <span class="avatar avatar--md avatar--initial">{{ m.name.charAt(0).toUpperCase() }}</span>
+              }
+            </button>
+
+            @if (profileOpen()) {
+              <div class="profile__backdrop" (click)="closeProfile()"></div>
+              <div class="profile__panel" (click)="$event.stopPropagation()">
+                <h3>Tu perfil</h3>
+
+                <div class="profile__preview">
+                  @if (profileDraftAvatar().type === 'emoji') {
+                    <span class="avatar avatar--lg avatar--emoji">{{ profileDraftAvatar().value }}</span>
+                  } @else {
+                    <img
+                      class="avatar avatar--lg"
+                      [src]="dicebearUrl(profileDraftAvatar().value)"
+                      alt=""
+                    />
+                  }
+                </div>
+
+                <label class="profile__field">
+                  <span>Nombre</span>
+                  <input
+                    type="text"
+                    [(ngModel)]="profileDraftName"
+                    name="profileName"
+                    maxlength="20"
+                    autocomplete="off"
+                  />
+                </label>
+
+                <div class="profile__actions-row">
+                  <button class="btn btn--ghost" (click)="rerollAvatar()" type="button">
+                    🎲 Avatar aleatorio
+                  </button>
+                </div>
+
+                <div class="profile__emojis">
+                  @for (e of emojiList; track e) {
+                    <button
+                      class="emoji-opt"
+                      [class.is-selected]="profileDraftAvatar().type === 'emoji' && profileDraftAvatar().value === e"
+                      (click)="pickEmoji(e)"
+                      type="button"
+                    >{{ e }}</button>
+                  }
+                </div>
+
+                <div class="profile__footer">
+                  <button class="btn btn--ghost" (click)="closeProfile()">Cancelar</button>
+                  <button class="btn btn--primary" (click)="saveProfile()" [disabled]="!profileDraftName.trim()">
+                    Guardar
+                  </button>
+                </div>
+              </div>
+            }
+          </div>
+        }
       </div>
     </header>
 
@@ -32,46 +104,61 @@
         <h3>Jugadores ({{ players().length }})</h3>
         <ul>
           @for (p of players(); track p.id) {
+            @let canKick = isHost() && p.id !== me()?.id;
             <li
-              class="player"
-              [class.player--voted]="!!p.vote"
-              [class.player--me]="p.id === me()?.id"
-              [class.player--spectator]="p.role === 'spectator'"
+              class="player-row"
+              [class.is-open]="openPlayerId() === p.id"
+              [class.has-kick]="canKick"
+              (touchstart)="onRowTouchStart($event)"
+              (touchmove)="onRowTouchMove($event)"
+              (touchend)="onRowTouchEnd($event, p)"
             >
-              <span class="player__avatar">{{ p.name.charAt(0).toUpperCase() }}</span>
-              <span class="player__name">
-                {{ p.name }}
-                @if (p.id === s.meta.hostId) { <small title="Admin">👑</small> }
-                @if (p.role === 'spectator') { <small class="player__tag">espectador</small> }
-              </span>
-
-              @if (isHost()) {
-                <button
-                  class="player__toggle"
-                  [class.is-on]="p.role === 'player'"
-                  (click)="togglePlayerRole(p)"
-                  [title]="p.role === 'player' ? 'Quitar voto' : 'Permitir votar'"
-                >
-                  {{ p.role === 'player' ? '🗳️' : '👁️' }}
-                </button>
-                @if (p.id !== me()?.id) {
-                  <button
-                    class="player__kick"
-                    (click)="kick(p)"
-                    title="Expulsar de la sala"
-                  >✕</button>
-                }
-              }
-
-              <span class="player__vote">
-                @if (p.role === 'spectator') {
-                  —
-                } @else if (revealed()) {
-                  {{ p.vote ?? '—' }}
+              <div
+                class="player"
+                [class.player--voted]="!!p.vote"
+                [class.player--me]="p.id === me()?.id"
+                [class.player--spectator]="p.role === 'spectator'"
+              >
+                @if (p.avatar?.type === 'emoji') {
+                  <span class="avatar avatar--sm avatar--emoji">{{ p.avatar?.value }}</span>
+                } @else if (p.avatar?.type === 'dicebear') {
+                  <img class="avatar avatar--sm" [src]="dicebearUrl(p.avatar?.value || p.name)" alt="" />
                 } @else {
-                  @if (p.vote) { ✓ } @else { … }
+                  <span class="avatar avatar--sm avatar--initial">{{ p.name.charAt(0).toUpperCase() }}</span>
                 }
-              </span>
+                <span class="player__name">
+                  {{ p.name }}
+                  @if (p.id === s.meta.hostId) { <small title="Admin">👑</small> }
+                  @if (p.role === 'spectator') { <small class="player__tag">espectador</small> }
+                </span>
+
+                @if (isHost()) {
+                  <button
+                    class="player__toggle"
+                    [class.is-on]="p.role === 'player'"
+                    (click)="togglePlayerRole(p)"
+                    [title]="p.role === 'player' ? 'Quitar voto' : 'Permitir votar'"
+                  >
+                    {{ p.role === 'player' ? '🗳️' : '👁️' }}
+                  </button>
+                }
+
+                <span class="player__vote">
+                  @if (p.role === 'spectator') {
+                    —
+                  } @else if (revealed()) {
+                    {{ p.vote ?? '—' }}
+                  } @else {
+                    @if (p.vote) { ✓ } @else { … }
+                  }
+                </span>
+              </div>
+
+              @if (canKick) {
+                <button class="player-row__kick" (click)="kick(p)" title="Expulsar">
+                  <span>✕</span>
+                </button>
+              }
             </li>
           }
         </ul>

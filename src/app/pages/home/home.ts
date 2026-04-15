@@ -2,6 +2,7 @@ import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { RoomService } from '../../services/room';
+import { Avatar, dicebearUrl, EMOJI_AVATARS, randomSeed } from '../../models/player';
 
 type Mode = 'choose' | 'create' | 'join';
 
@@ -19,8 +20,42 @@ export class Home {
   loading = signal(false);
   error = signal<string | null>(null);
 
-  name = '';
+  name = this.roomSvc.getStoredName();
   roomCode = '';
+
+  profileOpen = signal(false);
+  profileDraftName = '';
+  profileDraftAvatar = signal<Avatar>(this.roomSvc.getOrCreateAvatar());
+  myAvatar = signal<Avatar>(this.roomSvc.getOrCreateAvatar());
+  emojiList = EMOJI_AVATARS;
+  dicebearUrl = dicebearUrl;
+
+  openProfile() {
+    this.profileDraftName = this.name || '';
+    this.profileDraftAvatar.set(this.myAvatar());
+    this.profileOpen.set(true);
+  }
+
+  closeProfile() {
+    this.profileOpen.set(false);
+  }
+
+  rerollAvatar() {
+    this.profileDraftAvatar.set({ type: 'dicebear', value: randomSeed() });
+  }
+
+  pickEmoji(emoji: string) {
+    this.profileDraftAvatar.set({ type: 'emoji', value: emoji });
+  }
+
+  saveProfile() {
+    const cleanName = this.profileDraftName.trim();
+    const avatar = this.profileDraftAvatar();
+    this.roomSvc.saveLocalProfile(cleanName || undefined, avatar);
+    if (cleanName) this.name = cleanName;
+    this.myAvatar.set(avatar);
+    this.profileOpen.set(false);
+  }
 
   choose(mode: Exclude<Mode, 'choose'>) {
     this.error.set(null);

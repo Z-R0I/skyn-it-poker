@@ -18,6 +18,13 @@
   justify-content: center;
   padding: 2rem 1.25rem;
 
+  &__profile {
+    position: absolute;
+    top: 1.25rem;
+    right: 1.25rem;
+    z-index: 10;
+  }
+
   &__bg-cards {
     position: absolute;
     inset: 0;

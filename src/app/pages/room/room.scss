@@ -154,6 +154,7 @@
 }
 
 .player {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -170,19 +171,6 @@
   &--spectator {
     opacity: 0.65;
     border-style: dashed;
-  }
-
-  &__avatar {
-    width: 30px;
-    height: 30px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, #3b82f6, #a78bfa);
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: 700;
-    font-size: 0.85rem;
-    color: #fff;
   }
 
   &__name {
@@ -223,27 +211,51 @@
     &.is-on { border-color: rgba(59, 130, 246, 0.55); }
   }
 
+}
+
+.player-row {
+  position: relative;
+  border-radius: 10px;
+  overflow: hidden;
+  touch-action: pan-y;
+
+  .player {
+    position: relative;
+    z-index: 1;
+    background: rgba(30, 41, 59, 0.5);
+    transition: transform 0.22s ease;
+    will-change: transform;
+  }
+
   &__kick {
-    background: transparent;
-    border: 1px solid rgba(239, 68, 68, 0.35);
-    color: #fca5a5;
-    width: 28px;
-    height: 28px;
-    border-radius: 8px;
+    position: absolute;
+    top: 0;
+    right: 0;
+    height: 100%;
+    width: 52px;
+    border: none;
+    background: linear-gradient(90deg, #dc2626, #ef4444);
+    color: #fff;
+    font-size: 1rem;
+    font-weight: 700;
     cursor: pointer;
-    font-size: 0.85rem;
-    line-height: 1;
-    display: inline-flex;
+    display: flex;
     align-items: center;
     justify-content: center;
-    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
-
-    &:hover {
-      background: rgba(239, 68, 68, 0.22);
-      border-color: #ef4444;
-      color: #fff;
-    }
+    z-index: 0;
+    opacity: 0;
+    transition: opacity 0.2s ease;
   }
+
+  /* Desktop: hover desliza la fila y revela el botón */
+  @media (hover: hover) {
+    &.has-kick:hover .player { transform: translateX(-52px); }
+    &.has-kick:hover .player-row__kick { opacity: 1; }
+  }
+
+  /* Móvil / tactil: swipe a la izquierda */
+  &.is-open .player { transform: translateX(-52px); }
+  &.is-open .player-row__kick { opacity: 1; }
 }
 
 @keyframes kickedIn {

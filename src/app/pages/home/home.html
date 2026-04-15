@@ -1,4 +1,64 @@
 <main class="home">
+  <div class="home__profile profile">
+    <button class="profile__btn" (click)="openProfile()" title="Tu perfil">
+      @if (myAvatar().type === 'emoji') {
+        <span class="avatar avatar--md avatar--emoji">{{ myAvatar().value }}</span>
+      } @else {
+        <img class="avatar avatar--md" [src]="dicebearUrl(myAvatar().value)" alt="" />
+      }
+    </button>
+
+    @if (profileOpen()) {
+      <div class="profile__backdrop" (click)="closeProfile()"></div>
+      <div class="profile__panel" (click)="$event.stopPropagation()">
+        <h3>Tu perfil</h3>
+
+        <div class="profile__preview">
+          @if (profileDraftAvatar().type === 'emoji') {
+            <span class="avatar avatar--lg avatar--emoji">{{ profileDraftAvatar().value }}</span>
+          } @else {
+            <img class="avatar avatar--lg" [src]="dicebearUrl(profileDraftAvatar().value)" alt="" />
+          }
+        </div>
+
+        <label class="profile__field">
+          <span>Nombre</span>
+          <input
+            type="text"
+            [(ngModel)]="profileDraftName"
+            name="profileName"
+            maxlength="20"
+            autocomplete="off"
+          />
+        </label>
+
+        <div class="profile__actions-row">
+          <button class="btn btn--ghost" (click)="rerollAvatar()" type="button">
+            🎲 Avatar aleatorio
+          </button>
+        </div>
+
+        <div class="profile__emojis">
+          @for (e of emojiList; track e) {
+            <button
+              class="emoji-opt"
+              [class.is-selected]="profileDraftAvatar().type === 'emoji' && profileDraftAvatar().value === e"
+              (click)="pickEmoji(e)"
+              type="button"
+            >{{ e }}</button>
+          }
+        </div>
+
+        <div class="profile__footer">
+          <button class="btn btn--ghost" (click)="closeProfile()">Cancelar</button>
+          <button class="btn btn--primary" (click)="saveProfile()" [disabled]="!profileDraftName.trim()">
+            Guardar
+          </button>
+        </div>
+      </div>
+    }
+  </div>
+
   <div class="home__bg-cards" aria-hidden="true">
     <span class="bg-card" style="--i: 0">1</span>
     <span class="bg-card" style="--i: 1">3</span>
@@ -12,7 +72,7 @@
     <header class="card-panel__head">
       <h1 class="brand">
         <span class="brand__icon">♠</span>
-        skyn-it poker
+        Planning Poker
       </h1>
       <p class="subtitle">Estimación ágil en equipo, sin fricción.</p>
     </header>

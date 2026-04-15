@@ -16,7 +16,7 @@ import {
 } from 'firebase/database';
 import { firebaseConfig } from '../../environments/firebase';
 import { DeckType } from '../models/room';
-import { Player, PlayerRole } from '../models/player';
+import { Avatar, Player, PlayerRole, randomSeed } from '../models/player';
 
 export interface RoomMeta {
   createdAt: number | object;
@@ -59,9 +59,35 @@ export class RoomService {
     return id;
   }
 
+  getStoredName(): string {
+    return localStorage.getItem('skynit.name') ?? '';
+  }
+
+  getOrCreateAvatar(): Avatar {
+    const raw = localStorage.getItem('skynit.avatar');
+    if (raw) {
+      try { return JSON.parse(raw) as Avatar; } catch {}
+    }
+    const a: Avatar = { type: 'dicebear', value: randomSeed() };
+    localStorage.setItem('skynit.avatar', JSON.stringify(a));
+    return a;
+  }
+
+  saveLocalProfile(name?: string, avatar?: Avatar) {
+    this.saveProfile(name, avatar);
+  }
+
+  private saveProfile(name?: string, avatar?: Avatar) {
+    if (name) localStorage.setItem('skynit.name', name);
+    if (avatar) localStorage.setItem('skynit.avatar', JSON.stringify(avatar));
+  }
+
   async createRoom(roomId: string, name: string, deckType: DeckType = 'fibonacci'): Promise<void> {
     const playerId = this.getOrCreatePlayerId();
+    const avatar = this.getOrCreateAvatar();
     const roomRef = ref(this.db, `rooms/${roomId}`);
+
+    this.saveProfile(name, avatar);
 
     await set(roomRef, {
       meta: {
@@ -77,15 +103,17 @@ export class RoomService {
           role: 'player',
           vote: null,
           connected: true,
+          avatar,
         },
       },
     });
 
-    await this.attach(roomId, playerId, name, 'player');
+    await this.attach(roomId, playerId, name, 'player', avatar);
   }
 
   async joinRoom(roomId: string, name: string, role: PlayerRole = 'player'): Promise<boolean> {
     const playerId = this.getOrCreatePlayerId();
+    const avatar = this.getOrCreateAvatar();
     const metaRef = ref(this.db, `rooms/${roomId}/meta`);
 
     const snapshot = await new Promise<any>((resolve) => {
@@ -93,11 +121,18 @@ export class RoomService {
     });
     if (!snapshot) return false;
 
-    await this.attach(roomId, playerId, name, role);
+    this.saveProfile(name, avatar);
+    await this.attach(roomId, playerId, name, role, avatar);
     return true;
   }
 
-  private async attach(roomId: string, playerId: string, name: string, role: PlayerRole) {
+  private async attach(
+    roomId: string,
+    playerId: string,
+    name: string,
+    role: PlayerRole,
+    avatar: Avatar,
+  ) {
     this.detach();
 
     const roomRef = ref(this.db, `rooms/${roomId}`);
@@ -112,6 +147,7 @@ export class RoomService {
       role,
       vote: null,
       connected: true,
+      avatar,
     });
     onDisconnect(playerRef).remove();
 
@@ -161,6 +197,17 @@ export class RoomService {
       updates[`rooms/${s.id}/players/${pid}/vote`] = null;
     }
     await update(ref(this.db), updates);
+  }
+
+  async updateProfile(patch: { name?: string; avatar?: Avatar }) {
+    if (!this.playerRef) return;
+    const updates: Record<string, any> = {};
+    const cleanName = patch.name?.trim();
+    if (cleanName) updates['name'] = cleanName;
+    if (patch.avatar) updates['avatar'] = patch.avatar;
+    if (!Object.keys(updates).length) return;
+    await update(this.playerRef, updates);
+    this.saveProfile(cleanName, patch.avatar);
   }
 
   async kickPlayer(playerId: string) {
