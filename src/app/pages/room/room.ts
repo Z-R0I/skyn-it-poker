@@ -1,4 +1,4 @@
-import { Component, computed, inject, OnDestroy, OnInit, signal } from '@angular/core';
+import { Component, computed, effect, inject, OnDestroy, OnInit, signal } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { Deck } from '../../components/deck/deck';
@@ -48,6 +48,24 @@ export class Room implements OnInit, OnDestroy {
   story = computed(() => this.state()?.meta.currentStory ?? '');
   editingStory = signal(false);
   storyDraft = '';
+
+  kicked = signal(false);
+  private wasAttached = false;
+
+  constructor() {
+    effect(() => {
+      const s = this.state();
+      const m = this.me();
+      if (s && m) {
+        this.wasAttached = true;
+      } else if (this.wasAttached && s && !m) {
+        // estábamos dentro y ahora no estamos en la lista: nos han expulsado
+        this.wasAttached = false;
+        this.kicked.set(true);
+        setTimeout(() => this.router.navigate(['/']), 1800);
+      }
+    });
+  }
 
   cards = computed(() => {
     const type = this.deckType();
@@ -127,6 +145,12 @@ export class Room implements OnInit, OnDestroy {
   togglePlayerRole(p: Player) {
     if (!this.isHost()) return;
     this.svc.setPlayerRole(p.id, p.role === 'player' ? 'spectator' : 'player');
+  }
+
+  kick(p: Player) {
+    if (!this.isHost() || p.id === this.me()?.id) return;
+    if (!confirm(`¿Expulsar a ${p.name} de la sala?`)) return;
+    this.svc.kickPlayer(p.id);
   }
 
   async copyCode() {

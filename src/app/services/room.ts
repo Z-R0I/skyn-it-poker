@@ -163,6 +163,13 @@ export class RoomService {
     await update(ref(this.db), updates);
   }
 
+  async kickPlayer(playerId: string) {
+    const s = this.state();
+    if (!s) return;
+    if (playerId === s.meta.hostId) return; // no se puede expulsar al host
+    await remove(ref(this.db, `rooms/${s.id}/players/${playerId}`));
+  }
+
   async setPlayerRole(playerId: string, role: PlayerRole) {
     const s = this.state();
     if (!s) return;

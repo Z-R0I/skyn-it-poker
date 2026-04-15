@@ -54,6 +54,13 @@
                 >
                   {{ p.role === 'player' ? '🗳️' : '👁️' }}
                 </button>
+                @if (p.id !== me()?.id) {
+                  <button
+                    class="player__kick"
+                    (click)="kick(p)"
+                    title="Expulsar de la sala"
+                  >✕</button>
+                }
               }
 
               <span class="player__vote">
@@ -189,4 +196,14 @@
   <section class="loading">
     <p>Cargando sala…</p>
   </section>
+}
+
+@if (kicked()) {
+  <div class="kicked-overlay">
+    <div class="kicked-overlay__box">
+      <div class="kicked-overlay__icon">🚪</div>
+      <h2>Has sido expulsado</h2>
+      <p>El admin te ha sacado de la sala.</p>
+    </div>
+  </div>
 }
