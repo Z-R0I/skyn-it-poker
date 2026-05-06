@@ -38,10 +38,7 @@ export class Room implements OnInit, OnDestroy {
 
   voters = computed(() => this.players().filter((p) => p.role === 'player'));
 
-  canReveal = computed(() => {
-    const v = this.voters();
-    return v.length > 0 && v.every((p) => p.vote != null);
-  });
+  canReveal = computed(() => this.voters().some((p) => p.vote != null));
 
   amSpectator = computed(() => this.me()?.role === 'spectator');
 
